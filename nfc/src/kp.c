@@ -29,7 +29,6 @@ void kp_init(struct kp *this, int kp,
 void kp_restart(struct kp *this, int input) {
 	this->prev_input = input;
 	this->prev_error = 0;
-	this->prev_setpoint = input;
 	this->num_times_ran = 1;
 }
 
@@ -65,8 +64,6 @@ int kp_run(struct kp *this, int setpoint, int input) {
 	// Remember last output for next call
 	this->prev_output = this->output;
 	this->prev_error = error;
-
-	this->prev_setpoint = setpoint;
 
 	// Increment the Run() counter, after checking to make sure it hasn't reached
 	// max value.

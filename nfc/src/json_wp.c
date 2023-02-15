@@ -17,21 +17,21 @@
  * Example of the received JSON object:
  *
  * {
-	"commands" : [
-					{"command": "AXIS_FREE_RUN",
-					 "pars": {
-					 	"axis": "X",
-						"dir": "CW",
-						"speed": 8
-						}
-					},
-					{"command": "LOGS",
-					 "pars": {
-						"quantity": 10
-						}
-					}
-		    	  ]
-	}
+ "commands" : [
+ {"command": "AXIS_FREE_RUN",
+ "pars": {
+ "axis": "X",
+ "dir": "CW",
+ "speed": 8
+ }
+ },
+ {"command": "LOGS",
+ "pars": {
+ "quantity": 10
+ }
+ }
+ ]
+ }
 
  * Every executed command has the chance of returning a JSON object that will be inserted
  * in the response JSON object under a key corresponding to the executed command name, or
@@ -45,12 +45,13 @@
  * @param   **tx_buff	:pointer to pointer, will be set to the allocated return buffer
  * @returns	the length of the allocated response buffer
  */
-int json_wp(char *rx_buff, char **tx_buff)
-{
+int json_wp(char *rx_buff, char **tx_buff) {
 	JSON_Value *rx_JSON_value = json_parse_string(rx_buff);
 	JSON_Value *tx_JSON_value = json_value_init_object();
 	*tx_buff = NULL;
 	int buff_len = 0;
+
+	lDebug(Info, "%s", rx_buff);
 
 	if (!rx_JSON_value || (json_value_get_type(rx_JSON_value) != JSONObject)) {
 		lDebug(Error, "Error json parse.");

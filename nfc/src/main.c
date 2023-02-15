@@ -91,7 +91,7 @@ void msDelay(uint32_t ms)
  */
 int main(void)
 {	debugLocalSetLevel(Info);
-	debugNetSetLevel(Error);
+	debugNetSetLevel(Info);
 
 	prvSetupHardware();
 

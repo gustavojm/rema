@@ -19,9 +19,13 @@
 #include "json_wp.h"
 #include "debug.h"
 
-#define KEEPALIVE_IDLE              (5)
-#define KEEPALIVE_INTERVAL          (5)
-#define KEEPALIVE_COUNT             (3)
+#define KEEPALIVE_IDLE              (1)
+#define KEEPALIVE_INTERVAL          (1)
+#define KEEPALIVE_COUNT             (1)
+//#define KEEPALIVE_IDLE              (5)
+//#define KEEPALIVE_INTERVAL          (5)
+//#define KEEPALIVE_COUNT             (3)
+
 
 static void do_retransmit(const int sock)
 {
@@ -48,9 +52,9 @@ static void do_retransmit(const int sock)
 				// Walk-around for robust implementation.
 				int to_write = ack_len;
 
-				char ack_buff[5];
-				sprintf(ack_buff, "%04x", ack_len);
-				send(sock, ack_buff, 4, 0);
+//				char ack_buff[5];
+//				sprintf(ack_buff, "%04x", ack_len);
+//				send(sock, ack_buff, 4, 0);
 
 				while (to_write > 0) {
 					int written = send(sock, tx_buffer + (ack_len - to_write),
@@ -79,7 +83,7 @@ static void tcp_server_task(void *pvParameters)
 
 	char addr_str[128];
 	int ip_protocol = 0;
-	int keepAlive = 1;
+	int keepAlive = 0;
 	int keepIdle = KEEPALIVE_IDLE;
 	int keepInterval = KEEPALIVE_INTERVAL;
 	int keepCount = KEEPALIVE_COUNT;

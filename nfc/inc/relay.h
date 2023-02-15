@@ -11,6 +11,8 @@ void relay_init();
 
 void relay_main_pwr(bool state);
 
+bool relay_main_pwr_state();
+
 void relay_spare_led(bool state);
 
 #ifdef __cplusplus

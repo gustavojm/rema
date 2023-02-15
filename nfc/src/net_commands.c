@@ -15,6 +15,7 @@
 #define PROTOCOL_VERSION  	"JSON_1.0"
 
 bool stall_detection = true;
+bool control_enabled = false;
 extern int count_z;
 extern int count_b;
 extern int count_a;
@@ -29,8 +30,29 @@ typedef struct {
 	JSON_Value* (*cmd_function)(JSON_Value const *pars);
 } cmd_entry;
 
-JSON_Value* telemetria_cmd(JSON_Value const *pars)
-{
+QueueHandle_t* get_queue(const char *axis) {
+	QueueHandle_t *queue;
+
+	switch (*axis) {
+	case 'x':
+	case 'X':
+		queue = &x_axis.queue;
+		break;
+//	case 'y':
+//	case 'Y':
+//		axis_ = &y_axis->queue;
+//		break;
+//	case 'z':
+//	case 'Z':
+//		axis_ = &z_axis->queue;
+//		break;
+	default:
+		break;
+	}
+	return queue;
+}
+
+JSON_Value* telemetria_cmd(JSON_Value const *pars) {
 	JSON_Value *ans = json_value_init_object();
 	json_object_set_number(json_value_get_object(ans), "cuentas A",
 			x_axis.pos_act);
@@ -44,8 +66,7 @@ JSON_Value* telemetria_cmd(JSON_Value const *pars)
 
 }
 
-JSON_Value* logs_cmd(JSON_Value const *pars)
-{
+JSON_Value* logs_cmd(JSON_Value const *pars) {
 	if (pars && json_value_get_type(pars) == JSONObject) {
 		double quantity = json_object_get_number(json_value_get_object(pars),
 				"quantity");
@@ -76,28 +97,31 @@ JSON_Value* logs_cmd(JSON_Value const *pars)
 	return NULL;
 }
 
-JSON_Value* protocol_version_cmd(JSON_Value const *pars)
-{
+JSON_Value* protocol_version_cmd(JSON_Value const *pars) {
 	JSON_Value *ans = json_value_init_object();
 	json_object_set_string(json_value_get_object(ans), "Version",
 	PROTOCOL_VERSION);
 	return ans;
 }
 
-JSON_Value* control_enable_cmd(JSON_Value const *pars)
-{
-	bool enabled = json_object_get_boolean(json_value_get_object(pars),
-			"enabled");
-
-	relay_main_pwr(enabled);
-
+JSON_Value* control_enable_cmd(JSON_Value const *pars) {
 	JSON_Value *ans = json_value_init_object();
-	json_object_set_boolean(json_value_get_object(ans), "ACK", enabled);
+
+	if (json_object_has_value_of_type(json_value_get_object(pars), "enabled", JSONBoolean)) {
+		bool enabled = json_object_get_boolean(json_value_get_object(pars),
+				"enabled");
+		control_enabled = enabled;
+		relay_main_pwr(enabled);
+
+		json_object_set_boolean(json_value_get_object(ans), "ACK", enabled);
+	} else {
+		json_object_set_boolean(json_value_get_object(ans), "ACK",
+				control_enabled);
+	}
 	return ans;
 }
 
-JSON_Value* stall_control_cmd(JSON_Value const *pars)
-{
+JSON_Value* stall_control_cmd(JSON_Value const *pars) {
 
 	stall_detection = json_object_get_boolean(json_value_get_object(pars),
 			"enabled");
@@ -107,8 +131,7 @@ JSON_Value* stall_control_cmd(JSON_Value const *pars)
 	return ans;
 }
 
-JSON_Value* axis_closed_loop_cmd(JSON_Value const *pars)
-{
+JSON_Value* axis_closed_loop_cmd(JSON_Value const *pars) {
 	if (pars && json_value_get_type(pars) == JSONObject) {
 
 		char const *axis = json_object_get_string(json_value_get_object(pars),
@@ -149,18 +172,21 @@ JSON_Value* axis_closed_loop_cmd(JSON_Value const *pars)
 	return ans;
 }
 
-JSON_Value* kp_set_tunings_cmd(JSON_Value const *pars)
-{
+JSON_Value* kp_set_tunings_cmd(JSON_Value const *pars) {
 	if (pars && json_value_get_type(pars) == JSONObject) {
 
 		char const *axis = json_object_get_string(json_value_get_object(pars),
 				"axis");
-		int kp = (int)json_object_get_number(json_value_get_object(pars), "kp");
-		int update = (int)json_object_get_number(json_value_get_object(pars),
+		int kp = (int) json_object_get_number(json_value_get_object(pars),
+				"kp");
+		int update = (int) json_object_get_number(json_value_get_object(pars),
 				"update");
-		int min = (int)json_object_get_number(json_value_get_object(pars), "min");
-		int max = (int)json_object_get_number(json_value_get_object(pars), "max");
-		int abs_min = (int)json_object_get_number(json_value_get_object(pars), "abs_min");
+		int min = (int) json_object_get_number(json_value_get_object(pars),
+				"min");
+		int max = (int) json_object_get_number(json_value_get_object(pars),
+				"max");
+		int abs_min = (int) json_object_get_number(json_value_get_object(pars),
+				"abs_min");
 
 		struct mot_pap *axis_ = NULL;
 
@@ -192,9 +218,11 @@ JSON_Value* kp_set_tunings_cmd(JSON_Value const *pars)
 	return ans;
 }
 
-JSON_Value* axis_free_run_cmd(JSON_Value const *pars)
-{
+JSON_Value* axis_free_run_cmd(JSON_Value const *pars) {
 	if (pars && json_value_get_type(pars) == JSONObject) {
+
+		char const *axis = json_object_get_string(json_value_get_object(pars),
+				"axis");
 		char const *dir = json_object_get_string(json_value_get_object(pars),
 				"dir");
 		double speed = json_object_get_number(json_value_get_object(pars),
@@ -202,10 +230,21 @@ JSON_Value* axis_free_run_cmd(JSON_Value const *pars)
 
 		if (dir && speed != 0) {
 
-			enum mot_pap_direction direction =
+			struct mot_pap_msg *msg = (struct mot_pap_msg*) pvPortMalloc(
+					sizeof(struct mot_pap_msg));
+
+			msg->type = MOT_PAP_TYPE_FREE_RUNNING;
+			msg->free_run_direction = (
 					strcmp(dir, "CW") == 0 ?
-							MOT_PAP_DIRECTION_CW : MOT_PAP_DIRECTION_CCW;
-			mot_pap_move_free_run(&x_axis, direction, (int) speed);
+							MOT_PAP_DIRECTION_CW : MOT_PAP_DIRECTION_CCW);
+
+			msg->free_run_speed = (int) speed;
+
+			QueueHandle_t *queue = get_queue(axis);
+
+			if (xQueueSend(*queue, &msg, portMAX_DELAY) == pdPASS) {
+				lDebug(Debug, " Comando enviado!");
+			}
 
 			lDebug(Info, "AXIS_FREE_RUN DIR: %s, SPEED: %d", dir, (int ) speed);
 		}
@@ -216,8 +255,7 @@ JSON_Value* axis_free_run_cmd(JSON_Value const *pars)
 	return NULL;
 }
 
-JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars)
-{
+JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars) {
 	if (pars && json_value_get_type(pars) == JSONObject) {
 
 		char const *axis = json_object_get_string(json_value_get_object(pars),
@@ -237,10 +275,6 @@ JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars)
 
 		if (dir && speed != 0) {
 
-			enum mot_pap_direction direction =
-					strcmp(dir, "CW") == 0 ?
-							MOT_PAP_DIRECTION_CW : MOT_PAP_DIRECTION_CCW;
-
 			struct mot_pap_msg *msg = (struct mot_pap_msg*) pvPortMalloc(
 					sizeof(struct mot_pap_msg));
 
@@ -251,26 +285,10 @@ JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars)
 			msg->free_run_speed = (int) speed;
 			msg->steps = (int) steps;
 
-			QueueHandle_t *queue = NULL;
+			QueueHandle_t *queue = get_queue(axis);
 
-			switch (*axis) {
-			case 'x':
-			case 'X':
-				queue = &x_axis.queue;
-				break;
-//				case 'y':
-//				case 'Y':
-//						axis_ = &y_axis_;
-//						break;
-//				case 'z':
-//				case 'Z':
-//						msg->axis = &z_axis;
-//					break;
-			default:
-				break;
-			}
 			if (xQueueSend(*queue, &msg, portMAX_DELAY) == pdPASS) {
-				lDebug(Debug, " Comando enviado a arm.c exitoso!");
+				lDebug(Debug, " Comando enviado!");
 			}
 		}
 		JSON_Value *ans = json_value_init_object();
@@ -280,16 +298,14 @@ JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars)
 	return NULL;
 }
 
-JSON_Value* axis_stop_cmd(JSON_Value const *pars)
-{
+JSON_Value* axis_stop_cmd(JSON_Value const *pars) {
 	mot_pap_stop(&x_axis);
 	JSON_Value *ans = json_value_init_object();
 	json_object_set_boolean(json_value_get_object(ans), "ACK", true);
 	return ans;
 }
 
-JSON_Value* network_settings_cmd(JSON_Value const *pars)
-{
+JSON_Value* network_settings_cmd(JSON_Value const *pars) {
 	if (pars && json_value_get_type(pars) == JSONObject) {
 		char const *gw = json_object_get_string(json_value_get_object(pars),
 				"gw");
@@ -343,8 +359,7 @@ JSON_Value* network_settings_cmd(JSON_Value const *pars)
 	return NULL;
 }
 
-JSON_Value* mem_info_cmd(JSON_Value const *pars)
-{
+JSON_Value* mem_info_cmd(JSON_Value const *pars) {
 	JSON_Value *ans = json_value_init_object();
 	json_object_set_number(json_value_get_object(ans), "MEM_TOTAL",
 	configTOTAL_HEAP_SIZE);
@@ -355,8 +370,7 @@ JSON_Value* mem_info_cmd(JSON_Value const *pars)
 	return ans;
 }
 
-JSON_Value* temperature_info_cmd(JSON_Value const *pars)
-{
+JSON_Value* temperature_info_cmd(JSON_Value const *pars) {
 	JSON_Value *ans = json_value_init_object();
 	float temp1, temp2;
 	temperature_ds18b20_get(0, &temp1);
@@ -429,8 +443,7 @@ const cmd_entry cmds_table[] = {
  * @param 	*cmd 	:name of the command to execute
  * @param   *pars   :JSON object containing the passed parameters to the called function
  */
-JSON_Value* cmd_execute(char const *cmd, JSON_Value const *pars)
-{
+JSON_Value* cmd_execute(char const *cmd, JSON_Value const *pars) {
 	bool cmd_found = false;
 	for (int i = 0; i < (sizeof(cmds_table) / sizeof(cmds_table[0])); i++) {
 		if (!strcmp(cmd, cmds_table[i].cmd_name)) {

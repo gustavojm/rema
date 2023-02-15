@@ -39,6 +39,12 @@ void relay_main_pwr(bool state)
 	gpio_set_pin_state(relay_1, state);
 }
 
+bool relay_main_pwr_state()
+{
+	gpio_get_pin_state(relay_1);
+}
+
+
 /**
  * @brief	sets GPIO corresponding to DOUT3 where SPARE relay is connected
  * @param 	state	: boolean value for the output
