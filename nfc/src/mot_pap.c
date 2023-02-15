@@ -124,7 +124,7 @@ void mot_pap_move_steps(struct mot_pap *me, enum mot_pap_direction direction,
  * @param 	setpoint	: the resolver value to reach
  * @returns	nothing
  */
-void mot_pap_move_closed_loop(struct mot_pap *me, int setpoint)
+void mot_pap_move_closed_loop(struct mot_pap *me, float setpoint)
 {
 	int32_t error;
 	enum mot_pap_direction dir;
@@ -132,7 +132,7 @@ void mot_pap_move_closed_loop(struct mot_pap *me, int setpoint)
 	me->stalled_counter = 0;
 
 	me->pos_cmd = setpoint;
-	lDebug(Info, "%s: CLOSED_LOOP posCmd: %i posAct: %i", me->name, me->pos_cmd,
+	lDebug(Info, "%s: CLOSED_LOOP posCmd: %f posAct: %f", me->name, me->pos_cmd,
 			me->pos_act);
 
 	//calculate position error
@@ -212,58 +212,6 @@ void mot_pap_supervise(struct mot_pap *me)
 				goto end;
 			}
 
-			/*****************/
-			/*	   STEPS     */
-			/*****************/
-			if (me->type == MOT_PAP_TYPE_STEPS) {
-				bool first_half_passed = false;
-				first_half_passed = me->half_steps_curr
-						> (me->half_steps_to_middle);
-
-				if (!me->max_speed_reached && (!first_half_passed)
-						&& !me->stop) {
-					me->current_freq += (me->freq_delta);
-					if (me->current_freq >= me->requested_freq) {
-						me->current_freq = me->requested_freq;
-						me->max_speed_reached = true;
-						if (me->type == MOT_PAP_TYPE_STEPS)
-							me->max_speed_reached_distance =
-									me->half_steps_curr;
-
-					}
-				}
-
-				int distance_left = 0;
-				if (me->type == MOT_PAP_TYPE_STEPS)
-					distance_left = me->half_steps_requested
-							- me->half_steps_curr;
-
-				if (me->type == MOT_PAP_TYPE_CLOSED_LOOP)
-					distance_left = me->pos_cmd - me->pos_act;
-
-				if ((me->max_speed_reached
-						&& distance_left <= me->max_speed_reached_distance)
-						|| (!me->max_speed_reached && first_half_passed)
-						|| me->stop) {
-					me->current_freq -= (me->freq_delta);
-					if (me->current_freq <= me->freq_delta) {
-						me->current_freq = me->freq_delta;
-						if (me->stop) {
-							tmr_stop(&(me->tmr));
-							me->type = MOT_PAP_TYPE_STOP;
-//								if (me->wait_until_stop_semaphore) {
-//									xSemaphoreGive(
-//											me->wait_until_stop_semaphore);
-//								}
-							goto end;
-						}
-					}
-
-				}
-				tmr_stop(&(me->tmr));
-				tmr_set_freq(&(me->tmr), me->current_freq);
-				tmr_start(&(me->tmr));
-			}
 
 			/*****************/
 			/*	CLOSED LOOP	 */
@@ -302,10 +250,6 @@ void mot_pap_supervise(struct mot_pap *me)
 void mot_pap_isr(struct mot_pap *me)
 {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-	if (me->type == MOT_PAP_TYPE_STEPS) {
-		me->already_there = (me->half_steps_curr >= me->half_steps_requested);
-	}
 
 	int error;
 	if (me->type == MOT_PAP_TYPE_CLOSED_LOOP) {
@@ -346,9 +290,9 @@ void mot_pap_isr(struct mot_pap *me)
 void mot_pap_update_position(struct mot_pap *me)
 {
 	if (me->dir == MOT_PAP_DIRECTION_CW) {
-		++me->pos_act;
+		me->pos_act += me->counts_to_inch_factor;
 	} else {
-		--me->pos_act;
+		me->pos_act += me->counts_to_inch_factor;
 	}
 
 //	me->dir == MOT_PAP_DIRECTION_CW ? ++me->encoder_count:--me->pos_act;
@@ -364,6 +308,12 @@ void mot_pap_set_offset(struct mot_pap *me, int offset)
 {
 	me->offset = offset;
 }
+
+void mot_pap_set_position(struct mot_pap *me, double pos)
+{
+	me->pos_act = (float) pos;
+}
+
 
 /**
  * @brief	returns status of the X axis task.

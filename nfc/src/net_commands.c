@@ -31,7 +31,7 @@ typedef struct {
 } cmd_entry;
 
 QueueHandle_t* get_queue(const char *axis) {
-	QueueHandle_t *queue;
+	QueueHandle_t *queue = NULL;
 
 	switch (*axis) {
 	case 'x':
@@ -56,7 +56,7 @@ JSON_Value* telemetria_cmd(JSON_Value const *pars) {
 	JSON_Value *ans = json_value_init_object();
 	json_object_set_number(json_value_get_object(ans), "cuentas A",
 			x_axis.pos_act);
-	json_object_set_number(json_value_get_object(ans), "cuentas B", count_b);
+	json_object_set_number(json_value_get_object(ans), "cuentas B", x_axis.pos_act);
 	json_object_set_number(json_value_get_object(ans), "cuentas Z", count_z);
 	json_object_set_boolean(json_value_get_object(ans), "ZS x", x_axis.stop);
 
@@ -143,7 +143,7 @@ JSON_Value* axis_closed_loop_cmd(JSON_Value const *pars) {
 				sizeof(struct mot_pap_msg));
 
 		msg->type = MOT_PAP_TYPE_CLOSED_LOOP;
-		msg->closed_loop_setpoint = (int) setpoint;
+		msg->closed_loop_setpoint = (float) setpoint;
 
 		QueueHandle_t *queue = NULL;
 
@@ -171,6 +171,23 @@ JSON_Value* axis_closed_loop_cmd(JSON_Value const *pars) {
 	json_object_set_boolean(json_value_get_object(ans), "ACK", true);
 	return ans;
 }
+
+JSON_Value* set_cal_point_cmd(JSON_Value const *pars) {
+	if (pars && json_value_get_type(pars) == JSONObject) {
+
+		double pos_x = json_object_get_number(json_value_get_object(pars),
+				"position_x");
+		double pos_y = json_object_get_number(json_value_get_object(pars),
+				"position_y");
+
+		mot_pap_set_position(&x_axis, pos_x);
+		mot_pap_set_position(&y_axis, pos_y);
+	}
+	JSON_Value *ans = json_value_init_object();
+	json_object_set_boolean(json_value_get_object(ans), "ACK", true);
+	return ans;
+}
+
 
 JSON_Value* kp_set_tunings_cmd(JSON_Value const *pars) {
 	if (pars && json_value_get_type(pars) == JSONObject) {
@@ -266,12 +283,6 @@ JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars) {
 				"speed");
 		double steps = json_object_get_number(json_value_get_object(pars),
 				"steps");
-
-		double step_time = json_object_get_number(json_value_get_object(pars),
-				"step_time");
-
-		double step_amplitude_divider = json_object_get_number(
-				json_value_get_object(pars), "step_amplitude_divider");
 
 		if (dir && speed != 0) {
 
@@ -433,6 +444,10 @@ const cmd_entry cmds_table[] = {
 		{
 				"TEMPERATURE_INFO",
 				temperature_info_cmd,
+		},
+		{
+				"SET_CAL_POINT",
+				set_cal_point_cmd,
 		},
 };
 // @formatter:on

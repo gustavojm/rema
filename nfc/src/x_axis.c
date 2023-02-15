@@ -88,6 +88,7 @@ void x_axis_init() {
 
 	x_axis.name = "x_axis";
 	x_axis.type = MOT_PAP_TYPE_STOP;
+	x_axis.counts_to_inch_factor = (double) 1 / 1000000;
 	x_axis.half_pulses = 0;
 	x_axis.pos_act = 0;
 

@@ -43,7 +43,7 @@ struct kp {
 	//! @details	The constants with the z prefix are scaled according to this value.
 	int sample_period_ms;
 
-	int p_term;		//!< The proportional term that is summed as part of the output (calculated in Pid_Run())
+	float p_term;		//!< The proportional term that is summed as part of the output (calculated in Pid_Run())
 	int out_min;	//!< The minimum output value. Anything lower will be limited to this floor.
 	int out_max;	//!< The maximum output value. Anything higher will be limited to this ceiling.
 	int out_abs_min;	//!< The absolute minimum output value. Anything lower will be limited to this floor.
@@ -68,7 +68,7 @@ void kp_restart(struct kp *this, int input);
 
 //! @brief 		Computes new KP values
 //! @details 	Call once per sampleTimeMs. Output is stored in the kpData structure.
-int kp_run(struct kp *this, int setpoint, int input);
+int kp_run(struct kp *this, float setpoint, float input);
 
 void kp_set_output_limits(struct kp *this, int min, int max, int min_abs_output);
 

@@ -33,7 +33,7 @@ void kp_restart(struct kp *this, int input) {
 }
 
 
-int kp_run(struct kp *this, int setpoint, int input) {
+int kp_run(struct kp *this, float setpoint, float input) {
 #define RAMP_RATE	0.01		//Change the setpoint by at most 0.1 per iteration
 
 //	if (this->num_times_ran == 1) {
