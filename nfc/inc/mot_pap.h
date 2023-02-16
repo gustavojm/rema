@@ -133,6 +133,8 @@ void mot_pap_update_position(struct mot_pap *me);
 
 void mot_pap_set_offset(struct mot_pap *me, int offset);
 
+void mot_pap_set_position(struct mot_pap *me, double pos);
+
 uint32_t mot_pap_read_on_condition(void);
 
 JSON_Value* mot_pap_json(struct mot_pap *me);

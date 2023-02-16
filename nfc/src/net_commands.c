@@ -5,6 +5,7 @@
 #include "debug.h"
 #include "FreeRTOS.h"
 
+#include "rema.h"
 #include "net_commands.h"
 #include "parson.h"
 #include "json_wp.h"
@@ -14,12 +15,7 @@
 
 #define PROTOCOL_VERSION  	"JSON_1.0"
 
-bool stall_detection = true;
-bool control_enabled = false;
 extern int count_z;
-extern int count_b;
-extern int count_a;
-extern bool x_zs;
 
 extern struct mot_pap x_axis;
 extern struct mot_pap y_axis;
@@ -110,24 +106,24 @@ JSON_Value* control_enable_cmd(JSON_Value const *pars) {
 	if (json_object_has_value_of_type(json_value_get_object(pars), "enabled", JSONBoolean)) {
 		bool enabled = json_object_get_boolean(json_value_get_object(pars),
 				"enabled");
-		control_enabled = enabled;
-		relay_main_pwr(enabled);
-
-		json_object_set_boolean(json_value_get_object(ans), "ACK", enabled);
-	} else {
-		json_object_set_boolean(json_value_get_object(ans), "ACK",
-				control_enabled);
+		rema_control_enabled_set(enabled);
 	}
+	json_object_set_boolean(json_value_get_object(ans), "STATUS",
+				rema_control_enabled_get());
 	return ans;
 }
 
 JSON_Value* stall_control_cmd(JSON_Value const *pars) {
 
-	stall_detection = json_object_get_boolean(json_value_get_object(pars),
-			"enabled");
-
 	JSON_Value *ans = json_value_init_object();
-	json_object_set_boolean(json_value_get_object(ans), "ACK", stall_detection);
+
+	if (json_object_has_value_of_type(json_value_get_object(pars), "enabled", JSONBoolean)) {
+		bool enabled = json_object_get_boolean(json_value_get_object(pars),
+				"enabled");
+		rema_stall_control_set(enabled);
+	}
+	json_object_set_boolean(json_value_get_object(ans), "STATUS",
+				rema_stall_control_get());
 	return ans;
 }
 

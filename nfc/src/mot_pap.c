@@ -10,10 +10,8 @@
 
 #include "misc.h"
 #include "debug.h"
-#include "relay.h"
+#include "rema.h"
 #include "tmr.h"
-
-extern bool stall_detection;
 
 // Frequencies expressed in Khz
 static const int mot_pap_free_run_freqs[] = { 0, 5, 15, 25, 50, 75, 100, 125 };
@@ -186,7 +184,7 @@ void mot_pap_supervise(struct mot_pap *me)
 
 		if (xSemaphoreTake(me->supervisor_semaphore,
 				portMAX_DELAY) == pdPASS) {
-			if (stall_detection) {
+			if (rema_stall_control_get()) {
 				if (abs(
 						(int) (me->pos_act - me->last_pos)) < MOT_PAP_STALL_THRESHOLD) {
 
@@ -194,7 +192,8 @@ void mot_pap_supervise(struct mot_pap *me)
 					if (me->stalled_counter >= MOT_PAP_STALL_MAX_COUNT) {
 						me->stalled = true;
 						tmr_stop(&(me->tmr));
-						relay_main_pwr(0);
+						lDebug(Warn, "%s: stalled", me->name);
+						rema_control_enabled_set(false);
 						goto end;
 					}
 				} else {
@@ -202,27 +201,14 @@ void mot_pap_supervise(struct mot_pap *me)
 				}
 			}
 
-			if (me->stalled) {
-				lDebug(Warn, "%s: stalled", me->name);
-				goto end;
-			}
-
 			if (me->already_there) {
 				lDebug(Info, "%s: position reached", me->name);
 				goto end;
 			}
 
-
-			/*****************/
-			/*	CLOSED LOOP	 */
-			/*****************/
 			if (me->type == MOT_PAP_TYPE_CLOSED_LOOP) {
 				int out = kp_run(&(me->kp), me->pos_cmd, me->pos_act);
 				lDebug(Info, "Control output = %i: ", out);
-//				if (abs(out) < 10) {
-//					lDebug(Info, "%s: position reached", me->name);
-//					goto end;
-//				}
 
 				enum mot_pap_direction dir = mot_pap_direction_calculate(out);
 				if ((me->dir != dir) && (me->type != MOT_PAP_TYPE_STOP)) {
