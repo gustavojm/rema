@@ -26,21 +26,21 @@ typedef struct {
 	JSON_Value* (*cmd_function)(JSON_Value const *pars);
 } cmd_entry;
 
-QueueHandle_t* get_queue(const char *axis) {
-	QueueHandle_t *queue = NULL;
+QueueHandle_t get_queue(const char *axis) {
+	QueueHandle_t queue = NULL;
 
 	switch (*axis) {
 	case 'x':
 	case 'X':
-		queue = &x_axis.queue;
+		queue = x_axis.queue;
 		break;
 //	case 'y':
 //	case 'Y':
-//		axis_ = &y_axis->queue;
+//		axis_ = y_axis->queue;
 //		break;
 //	case 'z':
 //	case 'Z':
-//		axis_ = &z_axis->queue;
+//		axis_ = z_axis->queue;
 //		break;
 	default:
 		break;
@@ -141,26 +141,10 @@ JSON_Value* axis_closed_loop_cmd(JSON_Value const *pars) {
 		msg->type = MOT_PAP_TYPE_CLOSED_LOOP;
 		msg->closed_loop_setpoint = (float) setpoint;
 
-		QueueHandle_t *queue = NULL;
+		QueueHandle_t queue = get_queue(axis);
 
-		switch (*axis) {
-		case 'x':
-		case 'X':
-			queue = &x_axis.queue;
-			break;
-//				case 'y':
-//				case 'Y':
-//						axis_ = &y_axis_;
-//						break;
-//				case 'z':
-//				case 'Z':
-//						msg->axis = &z_axis;
-//					break;
-		default:
-			break;
-		}
-		if (xQueueSend(*queue, &msg, portMAX_DELAY) == pdPASS) {
-			lDebug(Debug, " Comando enviado a arm.c exitoso!");
+		if (queue && xQueueSend(queue, &msg, portMAX_DELAY) == pdPASS) {
+			lDebug(Debug, " Comando enviado!");
 		}
 	}
 	JSON_Value *ans = json_value_init_object();
@@ -186,6 +170,8 @@ JSON_Value* set_cal_point_cmd(JSON_Value const *pars) {
 
 
 JSON_Value* kp_set_tunings_cmd(JSON_Value const *pars) {
+	JSON_Value *ans = json_value_init_object();
+
 	if (pars && json_value_get_type(pars) == JSONObject) {
 
 		char const *axis = json_object_get_string(json_value_get_object(pars),
@@ -217,16 +203,16 @@ JSON_Value* kp_set_tunings_cmd(JSON_Value const *pars) {
 //						msg->axis = &z_axis;
 //					break;
 		default:
-			return;
+			json_object_set_boolean(json_value_get_object(ans), "ACK", false);
+			json_object_set_string(json_value_get_object(ans), "ERROR", "No axis specified");
+			return ans;
 			break;
 		}
 
 		kp_init(&(axis_->kp), kp, KP_DIRECT, update, min, max, abs_min);
 		axis_->step_time = update;
 		lDebug(Debug, "KP Settings set");
-
 	}
-	JSON_Value *ans = json_value_init_object();
 	json_object_set_boolean(json_value_get_object(ans), "ACK", true);
 	return ans;
 }
@@ -253,9 +239,9 @@ JSON_Value* axis_free_run_cmd(JSON_Value const *pars) {
 
 			msg->free_run_speed = (int) speed;
 
-			QueueHandle_t *queue = get_queue(axis);
+			QueueHandle_t queue = get_queue(axis);
 
-			if (xQueueSend(*queue, &msg, portMAX_DELAY) == pdPASS) {
+			if (queue && xQueueSend(queue, &msg, portMAX_DELAY) == pdPASS) {
 				lDebug(Debug, " Comando enviado!");
 			}
 
@@ -292,9 +278,9 @@ JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars) {
 			msg->free_run_speed = (int) speed;
 			msg->steps = (int) steps;
 
-			QueueHandle_t *queue = get_queue(axis);
+			QueueHandle_t queue = get_queue(axis);
 
-			if (xQueueSend(*queue, &msg, portMAX_DELAY) == pdPASS) {
+			if (queue && xQueueSend(queue, &msg, portMAX_DELAY) == pdPASS) {
 				lDebug(Debug, " Comando enviado!");
 			}
 		}
@@ -307,6 +293,15 @@ JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars) {
 
 JSON_Value* axis_stop_cmd(JSON_Value const *pars) {
 	mot_pap_stop(&x_axis);
+	JSON_Value *ans = json_value_init_object();
+	json_object_set_boolean(json_value_get_object(ans), "ACK", true);
+	return ans;
+}
+
+JSON_Value* axis_stop_all_cmd(JSON_Value const *pars) {
+	mot_pap_stop(&x_axis);
+//	mot_pap_stop(&y_axis);
+//	mot_pap_stop(&z_axis);
 	JSON_Value *ans = json_value_init_object();
 	json_object_set_boolean(json_value_get_object(ans), "ACK", true);
 	return ans;
@@ -404,6 +399,10 @@ const cmd_entry cmds_table[] = {
 		{
 				"AXIS_STOP",
 				axis_stop_cmd,
+		},
+		{
+				"AXIS_STOP_ALL",
+				axis_stop_all_cmd,
 		},
 		{
 				"AXIS_FREE_RUN",

@@ -9,25 +9,13 @@ extern "C" {
 #endif
 
 
-extern volatile bool control_enabled;
-extern volatile bool stall_detection;
+void rema_control_enabled_set(bool status);
 
-static inline void rema_control_enabled_set(bool status) {
-	control_enabled = status;
-	relay_main_pwr(status);
-}
+bool rema_control_enabled_get();
 
-static inline bool rema_control_enabled_get() {
-	return control_enabled;
-}
+void rema_stall_control_set(bool status);
 
-static inline void rema_stall_control_set(bool status) {
-	stall_detection = status;
-}
-
-static inline bool rema_stall_control_get() {
-	return stall_detection;
-}
+bool rema_stall_control_get();
 
 
 #ifdef __cplusplus
