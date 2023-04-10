@@ -254,43 +254,6 @@ JSON_Value* axis_free_run_cmd(JSON_Value const *pars) {
 	return NULL;
 }
 
-JSON_Value* axis_free_run_steps_cmd(JSON_Value const *pars) {
-	if (pars && json_value_get_type(pars) == JSONObject) {
-
-		char const *axis = json_object_get_string(json_value_get_object(pars),
-				"axis");
-		char const *dir = json_object_get_string(json_value_get_object(pars),
-				"dir");
-		double speed = json_object_get_number(json_value_get_object(pars),
-				"speed");
-		double steps = json_object_get_number(json_value_get_object(pars),
-				"steps");
-
-		if (dir && speed != 0) {
-
-			struct mot_pap_msg *msg = (struct mot_pap_msg*) pvPortMalloc(
-					sizeof(struct mot_pap_msg));
-
-			msg->type = MOT_PAP_TYPE_STEPS;
-			msg->free_run_direction = (
-					strcmp(dir, "CW") == 0 ?
-							MOT_PAP_DIRECTION_CW : MOT_PAP_DIRECTION_CCW);
-			msg->free_run_speed = (int) speed;
-			msg->steps = (int) steps;
-
-			QueueHandle_t queue = get_queue(axis);
-
-			if (queue && xQueueSend(queue, &msg, portMAX_DELAY) == pdPASS) {
-				lDebug(Debug, " Comando enviado!");
-			}
-		}
-		JSON_Value *ans = json_value_init_object();
-		json_object_set_boolean(json_value_get_object(ans), "ACK", true);
-		return ans;
-	}
-	return NULL;
-}
-
 JSON_Value* axis_stop_cmd(JSON_Value const *pars) {
 	mot_pap_stop(&x_axis);
 	JSON_Value *ans = json_value_init_object();
@@ -407,10 +370,6 @@ const cmd_entry cmds_table[] = {
 		{
 				"AXIS_FREE_RUN",
 				axis_free_run_cmd,
-		},
-		{
-				"AXIS_FREE_RUN_STEPS",
-				axis_free_run_steps_cmd,
 		},
 		{
 				"AXIS_CLOSED_LOOP",

@@ -13,8 +13,39 @@
 #include "rema.h"
 #include "tmr.h"
 
-// Frequencies expressed in Khz
-static const int mot_pap_free_run_freqs[] = { 0, 5, 15, 25, 50, 75, 100, 125 };
+void mot_pap_task(struct mot_pap *axis)
+{
+    struct mot_pap_msg *msg_rcv;
+    if (xQueueReceive(axis->queue, &msg_rcv, portMAX_DELAY) == pdPASS) {
+        lDebug(Info, "%s: command received", axis->name);
+
+        axis->stalled = false;         // If a new command was received, assume we are not stalled
+        axis->stalled_counter = 0;
+        axis->already_there = false;
+        axis->step_time = 100;
+
+        //mot_pap_read_corrected_pos(&x_axis);
+
+        switch (msg_rcv->type) {
+        case MOT_PAP_TYPE_FREE_RUNNING:
+            mot_pap_move_free_run(axis, msg_rcv->free_run_direction,
+                    msg_rcv->free_run_speed);
+            break;
+
+        case MOT_PAP_TYPE_CLOSED_LOOP:
+            mot_pap_move_closed_loop(axis, msg_rcv->closed_loop_setpoint);
+            break;
+
+        default:
+            mot_pap_stop(axis);
+            break;
+        }
+
+        vPortFree(msg_rcv);
+        msg_rcv = NULL;
+    }
+}
+
 
 /**
  * @brief	returns the direction of movement depending if the error is positive or negative
@@ -28,16 +59,6 @@ enum mot_pap_direction mot_pap_direction_calculate(int32_t error)
 }
 
 /**
- * @brief 	checks if the required FREE RUN speed is in the allowed range
- * @param 	speed : the requested speed
- * @returns	true if speed is in the allowed range
- */
-bool mot_pap_free_run_speed_ok(int speed)
-{
-	return ((speed > 0) && (speed <= MOT_PAP_MAX_SPEED_FREE_RUN));
-}
-
-/**
  * @brief	if allowed, starts a free run movement
  * @param 	me			: struct mot_pap pointer
  * @param 	direction	: either MOT_PAP_DIRECTION_CW or MOT_PAP_DIRECTION_CCW
@@ -47,7 +68,7 @@ bool mot_pap_free_run_speed_ok(int speed)
 void mot_pap_move_free_run(struct mot_pap *me, enum mot_pap_direction direction,
 		int speed)
 {
-	if (mot_pap_free_run_speed_ok(speed)) {
+	if (speed < MOT_PAP_MAX_FREQ) {
 		me->stalled = false; // If a new command was received, assume we are not stalled
 		me->stalled_counter = 0;
 		me->already_there = false;
@@ -60,7 +81,7 @@ void mot_pap_move_free_run(struct mot_pap *me, enum mot_pap_direction direction,
 		me->type = MOT_PAP_TYPE_FREE_RUNNING;
 		me->dir = direction;
 		gpio_set_pin_state(me->gpios.direction, me->dir);
-		me->requested_freq = mot_pap_free_run_freqs[speed] * 1000;
+		me->requested_freq = speed;
 
 		tmr_stop(&(me->tmr));
 		tmr_set_freq(&(me->tmr), me->requested_freq);
@@ -68,49 +89,6 @@ void mot_pap_move_free_run(struct mot_pap *me, enum mot_pap_direction direction,
 		lDebug(Info, "%s: FREE RUN, speed: %i, direction: %s", me->name,
 				me->requested_freq,
 				me->dir == MOT_PAP_DIRECTION_CW ? "CW" : "CCW");
-	} else {
-		lDebug(Warn, "%s: chosen speed out of bounds %i", me->name, speed);
-	}
-}
-
-void mot_pap_move_steps(struct mot_pap *me, enum mot_pap_direction direction,
-		int speed, int steps, int step_time, int step_amplitude_divider)
-{
-	if (mot_pap_free_run_speed_ok(speed)) {
-		me->stalled = false; // If a new command was received, assume we are not stalled
-		me->stalled_counter = 0;
-		me->already_there = false;
-		me->stop = false;
-
-		if (me->type != MOT_PAP_TYPE_STOP) {
-			me->stop = true;
-			//me->wait_until_stop_semaphore = xSemaphoreCreateBinary();
-			//xSemaphoreTake(me->wait_until_stop_semaphore, portMAX_DELAY);
-		}
-
-		me->stop = false;
-
-		me->type = MOT_PAP_TYPE_STEPS;
-
-		me->half_steps_curr = 0;
-		me->step_time = step_time;
-		me->half_steps_requested = steps << 1;
-
-		me->requested_freq = mot_pap_free_run_freqs[speed] * 1000;
-		me->freq_delta = me->requested_freq / step_amplitude_divider;
-		me->current_freq = me->freq_delta;
-		me->half_steps_to_middle = me->half_steps_requested >> 1;
-		me->max_speed_reached = false;
-		me->ticks_last_time = xTaskGetTickCount();
-		me->dir = direction;
-		gpio_set_pin_state(me->gpios.direction, me->dir);
-		tmr_stop(&(me->tmr));
-		tmr_set_freq(&(me->tmr), me->current_freq);
-		tmr_start(&(me->tmr));
-		lDebug(Info, "%s: STEPS RUN, speed: %u, direction: %s", me->name,
-				me->requested_freq,
-				me->dir == MOT_PAP_DIRECTION_CW ? "CW" : "CCW");
-
 	} else {
 		lDebug(Warn, "%s: chosen speed out of bounds %i", me->name, speed);
 	}
@@ -278,7 +256,7 @@ void mot_pap_update_position(struct mot_pap *me)
 	if (me->dir == MOT_PAP_DIRECTION_CW) {
 		me->pos_act += me->counts_to_inch_factor;
 	} else {
-		me->pos_act += me->counts_to_inch_factor;
+		me->pos_act -= me->counts_to_inch_factor;
 	}
 
 //	me->dir == MOT_PAP_DIRECTION_CW ? ++me->encoder_count:--me->pos_act;

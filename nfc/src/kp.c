@@ -112,7 +112,6 @@ int kp_get_zp(struct kp *this) {
 
 void kp_set_sample_period(struct kp *this, unsigned int new_sample_period_ms) {
 	if (new_sample_period_ms > 0) {
-		int ratio = (int) new_sample_period_ms / (double) this->sample_period_ms;
 		this->sample_period_ms = new_sample_period_ms;
 	}
 }

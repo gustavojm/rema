@@ -104,6 +104,8 @@ struct mot_pap {
 	struct kp kp;
 };
 
+void mot_pap_task(struct mot_pap *axis);
+
 void mot_pap_init();
 
 void mot_pap_supervise(struct mot_pap *me);
