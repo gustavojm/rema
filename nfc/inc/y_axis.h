@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 // Declaration needed because TEST_GUI calls this IRQ handler as a standard function
-void TIMER1_IRQHandler(void);
+void TIMER2_IRQHandler(void);
 
 void y_axis_init();
 

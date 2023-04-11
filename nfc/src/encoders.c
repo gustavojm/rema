@@ -18,6 +18,8 @@ int count_b = 0;
 int count_a = 0;
 
 extern struct mot_pap x_axis;
+extern struct mot_pap y_axis;
+extern struct mot_pap z_axis;
 
 /**
 * @brief	Handle interrupt from GPIO pin or GPIO pin mapped to PININT
