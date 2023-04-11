@@ -56,7 +56,7 @@ void y_axis_init() {
 
     y_axis.name = "y_axis";
     y_axis.type = MOT_PAP_TYPE_STOP;
-    y_axis.counts_to_inch_factor = (double) 1 / 1000000;
+    y_axis.inches_to_counts_factor = 1000;
     y_axis.half_pulses = 0;
     y_axis.pos_act = 0;
 
@@ -87,12 +87,12 @@ void y_axis_init() {
 
     if (y_axis.supervisor_semaphore != NULL) {
         // Create the 'handler' task, which is the task to which interrupt processing is deferred
-        xTaskCreate(y_axis_supervisor_task, "Y_AXIS supervisor", 512,
+        xTaskCreate(y_axis_supervisor_task, "Y_AXIS supervisor", 256,
         NULL, Y_AXIS_SUPERVISOR_TASK_PRIORITY, NULL);
         lDebug(Info, "y_axis: supervisor task created");
     }
 
-    xTaskCreate(y_axis_task, "Y_AXIS", 512, NULL, Y_AXIS_TASK_PRIORITY, NULL);
+    xTaskCreate(y_axis_task, "Y_AXIS", 256, NULL, Y_AXIS_TASK_PRIORITY, NULL);
 
     lDebug(Info, "y_axis: task created");
 }

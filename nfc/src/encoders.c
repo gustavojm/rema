@@ -45,8 +45,7 @@ void GPIO7_IRQHandler(void)
  * @brief	Main program body
  * @return	Does not return
  */
-void encoders_init(void)
-{
+void encoders_init(void) {
 	//Chip_Clock_Enable(CLK_MX_GPIO);
 	count_z = 0;
 	count_b = 0;
@@ -79,6 +78,5 @@ void encoders_init(void)
 	NVIC_EnableIRQ(PIN_INT6_IRQn);
 	NVIC_ClearPendingIRQ(PIN_INT7_IRQn);
 	NVIC_EnableIRQ(PIN_INT7_IRQn);
-
 
 }
