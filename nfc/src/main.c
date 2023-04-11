@@ -55,11 +55,11 @@ static void prvSetupHardware(void)
 
 	Board_Init();
 	settings_init();
-	//settings_erase();
+	settings_erase();
 	relay_init();
 	x_zs_init();
 	x_axis_init();
-	y_axis_init();
+	//y_axis_init();
 	z_axis_init();
 
 	//temperature_init();

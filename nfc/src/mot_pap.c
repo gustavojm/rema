@@ -251,16 +251,12 @@ void mot_pap_isr(struct mot_pap *me)
  * @param 	me : struct mot_pap pointer
  */
 
-void mot_pap_update_position(struct mot_pap *me)
-{
+void mot_pap_update_position(struct mot_pap *me) {
 	if (me->dir == MOT_PAP_DIRECTION_CW) {
 		me->pos_act += me->counts_to_inch_factor;
 	} else {
 		me->pos_act -= me->counts_to_inch_factor;
 	}
-
-//	me->dir == MOT_PAP_DIRECTION_CW ? ++me->encoder_count:--me->pos_act;
-
 }
 
 /**

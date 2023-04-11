@@ -71,7 +71,6 @@ struct mot_pap {
 	enum mot_pap_type type;
 	enum mot_pap_direction dir;
 
-	bool max_speed_reached;
 	bool already_there;
 	bool stalled;
 	volatile bool stop;
@@ -80,8 +79,6 @@ struct mot_pap {
 	float pos_cmd;
 
 	int requested_freq;
-	int current_freq;
-	int freq_delta;
 
 	int step_time;
 	int half_steps_requested;
@@ -92,7 +89,6 @@ struct mot_pap {
 	int half_pulses;	// counts steps from the last call to supervisor task
 	int offset;
 
-	int max_speed_reached_distance;
 	int ticks_last_time;
 	int last_pos;
 	float counts_to_inch_factor;

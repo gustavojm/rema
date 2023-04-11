@@ -87,7 +87,7 @@ void z_axis_init() {
 
     if (z_axis.supervisor_semaphore != NULL) {
         // Create the 'handler' task, which is the task to which interrupt processing is deferred
-        xTaskCreate(z_axis_supervisor_task, "Z_AXIS supervisor", 2048,
+        xTaskCreate(z_axis_supervisor_task, "Z_AXIS supervisor", 512,
         NULL, Z_AXIS_SUPERVISOR_TASK_PRIORITY, NULL);
         lDebug(Info, "z_axis: supervisor task created");
     }
