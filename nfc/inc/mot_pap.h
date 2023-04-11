@@ -76,8 +76,8 @@ struct mot_pap {
 	bool stalled;
 	volatile bool stop;
 
-	volatile float pos_act;
-	float pos_cmd;
+	volatile int pos_act;
+	int pos_cmd;
 
 	int requested_freq;
 	int current_freq;
@@ -95,7 +95,7 @@ struct mot_pap {
 	int max_speed_reached_distance;
 	int ticks_last_time;
 	int last_pos;
-	float counts_to_inch_factor;
+	int inches_to_counts_factor;
 
 	struct mot_pap_gpios gpios;
 	struct tmr tmr;
@@ -122,7 +122,7 @@ void mot_pap_supervisor_task();
 void mot_pap_move_free_run(struct mot_pap *me, enum mot_pap_direction direction,
 		int speed);
 
-void mot_pap_move_closed_loop(struct mot_pap *status, float setpoint);
+void mot_pap_move_closed_loop(struct mot_pap *status, int setpoint);
 
 void mot_pap_move_steps(struct mot_pap *me, enum mot_pap_direction direction,
 		int speed, int steps, int step_time, int step_amplitude_divider);

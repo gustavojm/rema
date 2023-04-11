@@ -13,31 +13,31 @@
 #include "rema.h"
 #include "tmr.h"
 
-void mot_pap_task(struct mot_pap *axis)
+void mot_pap_task(struct mot_pap *me)
 {
     struct mot_pap_msg *msg_rcv;
-    if (xQueueReceive(axis->queue, &msg_rcv, portMAX_DELAY) == pdPASS) {
-        lDebug(Info, "%s: command received", axis->name);
+    if (xQueueReceive(me->queue, &msg_rcv, portMAX_DELAY) == pdPASS) {
+        lDebug(Info, "%s: command received", me->name);
 
-        axis->stalled = false;         // If a new command was received, assume we are not stalled
-        axis->stalled_counter = 0;
-        axis->already_there = false;
-        axis->step_time = 100;
+        me->stalled = false;         // If a new command was received, assume we are not stalled
+        me->stalled_counter = 0;
+        me->already_there = false;
+        me->step_time = 100;
 
         //mot_pap_read_corrected_pos(&x_axis);
 
         switch (msg_rcv->type) {
         case MOT_PAP_TYPE_FREE_RUNNING:
-            mot_pap_move_free_run(axis, msg_rcv->free_run_direction,
+            mot_pap_move_free_run(me, msg_rcv->free_run_direction,
                     msg_rcv->free_run_speed);
             break;
 
         case MOT_PAP_TYPE_CLOSED_LOOP:
-            mot_pap_move_closed_loop(axis, msg_rcv->closed_loop_setpoint);
+            mot_pap_move_closed_loop(me, msg_rcv->closed_loop_setpoint * me->inches_to_counts_factor);
             break;
 
         default:
-            mot_pap_stop(axis);
+            mot_pap_stop(me);
             break;
         }
 
@@ -100,7 +100,7 @@ void mot_pap_move_free_run(struct mot_pap *me, enum mot_pap_direction direction,
  * @param 	setpoint	: the resolver value to reach
  * @returns	nothing
  */
-void mot_pap_move_closed_loop(struct mot_pap *me, float setpoint)
+void mot_pap_move_closed_loop(struct mot_pap *me, int setpoint)
 {
 	int32_t error;
 	enum mot_pap_direction dir;
@@ -108,7 +108,7 @@ void mot_pap_move_closed_loop(struct mot_pap *me, float setpoint)
 	me->stalled_counter = 0;
 
 	me->pos_cmd = setpoint;
-	lDebug(Info, "%s: CLOSED_LOOP posCmd: %f posAct: %f", me->name, me->pos_cmd,
+	lDebug(Info, "%s: CLOSED_LOOP posCmd: %i posAct: %i", me->name, me->pos_cmd,
 			me->pos_act);
 
 	//calculate position error
@@ -254,9 +254,9 @@ void mot_pap_isr(struct mot_pap *me)
 void mot_pap_update_position(struct mot_pap *me)
 {
 	if (me->dir == MOT_PAP_DIRECTION_CW) {
-		me->pos_act += me->counts_to_inch_factor;
+		me->pos_act ++;
 	} else {
-		me->pos_act -= me->counts_to_inch_factor;
+		me->pos_act --;
 	}
 
 //	me->dir == MOT_PAP_DIRECTION_CW ? ++me->encoder_count:--me->pos_act;
@@ -275,7 +275,7 @@ void mot_pap_set_offset(struct mot_pap *me, int offset)
 
 void mot_pap_set_position(struct mot_pap *me, double pos)
 {
-	me->pos_act = (float) pos;
+	me->pos_act = pos * me->inches_to_counts_factor ;
 }
 
 
@@ -293,7 +293,7 @@ JSON_Value* mot_pap_json(struct mot_pap *me)
 {
 	JSON_Value *ans = json_value_init_object();
 	json_object_set_number(json_value_get_object(ans), "pos_cmd", me->pos_cmd);
-	json_object_set_number(json_value_get_object(ans), "posAct", me->pos_act);
+	json_object_set_number(json_value_get_object(ans), "posAct", me->pos_act / me->inches_to_counts_factor);
 	json_object_set_boolean(json_value_get_object(ans), "stalled", me->stalled);
 	json_object_set_number(json_value_get_object(ans), "offset", me->offset);
 	return ans;

@@ -56,7 +56,7 @@ void z_axis_init() {
 
     z_axis.name = "z_axis";
     z_axis.type = MOT_PAP_TYPE_STOP;
-    z_axis.counts_to_inch_factor = (double) 1 / 1000000;
+    z_axis.inches_to_counts_factor = 1000;
     z_axis.half_pulses = 0;
     z_axis.pos_act = 0;
 
@@ -87,12 +87,12 @@ void z_axis_init() {
 
     if (z_axis.supervisor_semaphore != NULL) {
         // Create the 'handler' task, which is the task to which interrupt processing is deferred
-        xTaskCreate(z_axis_supervisor_task, "Z_AXIS supervisor", 2048,
+        xTaskCreate(z_axis_supervisor_task, "Z_AXIS supervisor", 256,
         NULL, Z_AXIS_SUPERVISOR_TASK_PRIORITY, NULL);
         lDebug(Info, "z_axis: supervisor task created");
     }
 
-    xTaskCreate(z_axis_task, "Z_AXIS", 512, NULL, Z_AXIS_TASK_PRIORITY, NULL);
+    xTaskCreate(z_axis_task, "Z_AXIS", 256, NULL, Z_AXIS_TASK_PRIORITY, NULL);
 
     lDebug(Info, "z_axis: task created");
 }
