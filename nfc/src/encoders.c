@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-=======
-#include "mot_pap.h"
-#include "x_axis.h"
-
->>>>>>> 5d75c438bb98a010a19ca5bf025accc820e063b4
 #include <stdint.h>
 
 #include "board.h"
@@ -11,11 +5,6 @@
 
 #include "encoders.h"
 #include "mot_pap.h"
-#include "x_axis.h"
-
-int count_z = 0;
-int count_b = 0;
-int count_a = 0;
 
 extern struct mot_pap x_axis;
 extern struct mot_pap y_axis;
@@ -49,10 +38,6 @@ void GPIO7_IRQHandler(void)
  */
 void encoders_init(void) {
 	//Chip_Clock_Enable(CLK_MX_GPIO);
-	count_z = 0;
-	count_b = 0;
-	count_a = 0;
-
 	gpio_init_input((struct gpio_entry) {7, 4, (SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | SCU_MODE_FUNC0), 3, 12});
 	gpio_init_input((struct gpio_entry) {7, 5, (SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | SCU_MODE_FUNC0), 3, 13});
 	gpio_init_input((struct gpio_entry) {7, 6, (SCU_MODE_INBUFF_EN | SCU_MODE_PULLUP | SCU_MODE_FUNC0), 3, 14});

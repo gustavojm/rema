@@ -53,7 +53,7 @@ JSON_Value* telemetria_cmd(JSON_Value const *pars) {
 	json_object_set_number(json_value_get_object(ans), "cuentas A",
 			x_axis.pos_act / (float) x_axis.inches_to_counts_factor);
 	json_object_set_number(json_value_get_object(ans), "cuentas B", 0);
-	json_object_set_number(json_value_get_object(ans), "cuentas Z", count_z);
+	json_object_set_number(json_value_get_object(ans), "cuentas Z", 0);
 	json_object_set_boolean(json_value_get_object(ans), "ZS x", x_axis.stop);
 
 	//json_object_set_value(json_value_get_object(ans), "eje_x", mot_pap_json(&x_axis));
