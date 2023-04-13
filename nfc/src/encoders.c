@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+#include "mot_pap.h"
+#include "x_axis.h"
+
+>>>>>>> 5d75c438bb98a010a19ca5bf025accc820e063b4
 #include <stdint.h>
 
 #include "board.h"
