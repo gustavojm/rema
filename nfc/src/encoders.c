@@ -1,10 +1,3 @@
-/*
- * encoders.c
- *
- *  Created on: 7 nov. 2022
- *      Author: gspc
- */
-
 #include "mot_pap.h"
 #include "x_axis.h"
 
