@@ -1,17 +1,11 @@
-/*
- * encoders.c
- *
- *  Created on: 7 nov. 2022
- *      Author: gspc
- */
+#include <stdint.h>
 
+#include "board.h"
+#include "gpio.h"
+
+#include "encoders.h"
 #include "mot_pap.h"
 #include "x_axis.h"
-
-#include <stdint.h>
-#include "board.h"
-#include "encoders.h"
-#include "gpio.h"
 
 int count_z = 0;
 int count_b = 0;
@@ -34,13 +28,13 @@ void GPIO5_IRQHandler(void)
 void GPIO6_IRQHandler(void)
 {
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(6));
-	++count_b;
+    mot_pap_update_position(&y_axis);
 }
 
 void GPIO7_IRQHandler(void)
 {
 	Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(7));
-	++count_z;
+    mot_pap_update_position(&z_axis);
 }
 
 /**
