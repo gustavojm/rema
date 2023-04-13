@@ -53,9 +53,13 @@ void mot_pap_task(struct mot_pap *me)
  * @returns	MOT_PAP_DIRECTION_CW if error is positive
  * @returns	MOT_PAP_DIRECTION_CCW if error is negative
  */
-enum mot_pap_direction mot_pap_direction_calculate(int32_t error)
+static enum mot_pap_direction mot_pap_direction_calculate(int32_t error, bool reversed)
 {
-	return error < 0 ? MOT_PAP_DIRECTION_CCW : MOT_PAP_DIRECTION_CW;
+    if (reversed) {
+        return error < 0 ? MOT_PAP_DIRECTION_CW : MOT_PAP_DIRECTION_CCW;
+    } else {
+        return error < 0 ? MOT_PAP_DIRECTION_CCW : MOT_PAP_DIRECTION_CW;
+    }
 }
 
 /**
@@ -123,7 +127,7 @@ void mot_pap_move_closed_loop(struct mot_pap *me, int setpoint)
 
 		int out = kp_run(&(me->kp), me->pos_cmd, me->pos_act);
 
-		dir = mot_pap_direction_calculate(out);
+		dir = mot_pap_direction_calculate(out, me->reversed);
 		if ((me->dir != dir) && (me->type != MOT_PAP_TYPE_STOP)) {
 			tmr_stop(&(me->tmr));
 			vTaskDelay(pdMS_TO_TICKS(MOT_PAP_DIRECTION_CHANGE_DELAY_MS));
@@ -188,7 +192,7 @@ void mot_pap_supervise(struct mot_pap *me)
 				int out = kp_run(&(me->kp), me->pos_cmd, me->pos_act);
 				lDebug(Info, "Control output = %i: ", out);
 
-				enum mot_pap_direction dir = mot_pap_direction_calculate(out);
+				enum mot_pap_direction dir = mot_pap_direction_calculate(out, me->reversed);
 				if ((me->dir != dir) && (me->type != MOT_PAP_TYPE_STOP)) {
 					tmr_stop(&(me->tmr));
 					vTaskDelay(
@@ -252,11 +256,11 @@ void mot_pap_isr(struct mot_pap *me)
  */
 
 void mot_pap_update_position(struct mot_pap *me) {
-	if (me->dir == MOT_PAP_DIRECTION_CW) {
-		me->pos_act ++;
-	} else {
-		me->pos_act --;
-	}
+    if (me->reversed) {
+        (me->dir == MOT_PAP_DIRECTION_CW) ? me->pos_act -- : me->pos_act ++;
+    } else {
+        (me->dir == MOT_PAP_DIRECTION_CW) ? me->pos_act ++ : me->pos_act --;
+    }
 }
 
 /**

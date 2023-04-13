@@ -56,6 +56,7 @@ void x_axis_init() {
 
     x_axis.name = "x_axis";
     x_axis.type = MOT_PAP_TYPE_STOP;
+    x_axis.reversed = false;
     x_axis.inches_to_counts_factor = 1000;
     x_axis.half_pulses = 0;
     x_axis.pos_act = 0;

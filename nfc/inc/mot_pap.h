@@ -94,6 +94,7 @@ struct mot_pap {
 	QueueHandle_t queue;
 	SemaphoreHandle_t supervisor_semaphore;
 	struct kp kp;
+	bool reversed;
 };
 
 void mot_pap_task(struct mot_pap *axis);
