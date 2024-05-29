@@ -1,0 +1,9 @@
+[submodule "rema_firmware"]
+	path = rema_firmware
+	url = git@github.com:gustavojm/rema_firmware.git
+[submodule "rema_proxy"]
+	path = rema_proxy
+	url = git@github.com:gustavojm/rema_proxy.git
+[submodule "encoders"]
+	path = encoders
+	url = git@github.com:gustavojm/encoders_pico
