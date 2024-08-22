@@ -1,5 +1,5 @@
 [submodule "rema_firmware"]
-	path = rema_firmware
+	path = firmware
 	url = git@github.com:gustavojm/rema_firmware.git
 [submodule "rema_proxy"]
 	path = rema_proxy
